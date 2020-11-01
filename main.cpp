@@ -3,9 +3,10 @@
 
 int main() {
     std::string s;
-    int st[10000];
+    int st[10000];// Не st, а stack
     std::cin >> s;
     int k=0;
+    
     while(s != "exit") {
         if(s == "push") {
             int n;
