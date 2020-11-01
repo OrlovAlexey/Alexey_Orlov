@@ -5,6 +5,8 @@ using std::vector;
 using std::cin;
 using std::cout;
 
+//a,b,c?? Даже если хочется называть короткими именнами переменные, на входе они должны быть нормальными
+// потом ссылками переименуешь. Ну или комментариями перед функцией описывай что происходит
 vector<int> Merge(vector<int> &b, vector<int> &c, long long &count){
     vector<int> a;
     int i = 0;
@@ -39,7 +41,8 @@ vector<int> Merge_sort(vector<int> &a, long long &count){
     for(int i = 0; i < size_a/2; ++i){
         b[i] = a[i];
     }
-    vector<int> c(size_a/2);
+    vector<int> c(size_a/2);// Создавать массивы для каждого рекурсивного вызова плохая идея, так как много памяти берёшь почём зря
+    // можно было бы создать их заранее и переиспользовать для каждого вызова рекурсии. Создать в функции обёртке только, не в main
     for(int i = 0; i < size_a/2; ++i) {
         c[i] = a[size_a/2 + i];
     }
