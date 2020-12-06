@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <iomanip>
 
+
 using std::cin;
 using std::cout;
 using std::ios_base;
@@ -59,4 +60,3 @@ int main() {
         }
     }
 }
-
