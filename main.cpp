@@ -52,7 +52,7 @@ public:
 int main() {
     long long n, k;
     cin >> n >> k;
-    if ( n <= k ) {
+    if ( n <= k ) {// Эх если бы...
         long long array[n];
         for ( long long i = 0; i < n; ++i ) {
             cin >> array[i];
@@ -72,7 +72,8 @@ int main() {
 
         for ( long long i = k; i < n; ++i ) {
             cin >> temp;
-            Heap.insert(temp);
+            Heap.insert(temp);//А зачем делать это каждый раз, если можно быстро посмотреть максимальный элемент и сразу понять,
+            //требуется ли его заменять или нет
             Heap.extractMax();
         }
         long long additional_array[k];
