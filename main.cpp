@@ -73,7 +73,8 @@ int main() {
             scanf("%lld%lld", &p, &d);
             long long t;
             p--;
-            for ( long long i = 0; i < Heap.n; ++i ) {
+            for ( long long i = 0; i < Heap.n; ++i ) {// Искать влоб элемент для уменьшения такая себе идея
+                //Слишком дорого по времени
                 if ( Heap.indexes[i] == p ) {
                     t = i;
                     break;
