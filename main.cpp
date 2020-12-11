@@ -206,7 +206,7 @@ void splay_tree::small_right_rotate() {
     set_sum();
 }
 
-splay_tree::~splay_tree() {
+splay_tree::~splay_tree() {//delete от nullptr довольно не тривиальная вещь, но ладно
     delete left;
     delete right;
 }
