@@ -14,8 +14,9 @@ private:
     splay_tree *left = nullptr, *right = nullptr;
     ll key = 0, sum = 0;
     bool empty = true;
+    void splay(ll, bool);
+    pair<splay_tree, splay_tree> split(ll);
 public:
-    void splay(ll, bool);// По хорошему эта функция не должна быть доступна пользователям снаружи. Интерфейс этого дерева должен быть аналогичен AVL
     void set_sum();
     void new_vertex(ll);
     bool exists(ll);
@@ -23,14 +24,14 @@ public:
     ll get_sum(ll, ll);
     ll find_max();
     ll next_or_equal(ll);
-    pair<splay_tree, splay_tree> split(ll);//Аналогично
-    void merge(splay_tree);// и тут
-    void small_left_rotate();// и тут
-    void small_right_rotate();// и тут
+    void merge(splay_tree);
+    void small_left_rotate();
+    void small_right_rotate();
+    ~splay_tree();
 };
 
 void splay_tree::splay(ll x, bool is_root = true) {
-//splay сразу выполняет функции поиска, странно
+
     if (left != nullptr && x < key) {
         left->splay(x, false);
     }
@@ -137,13 +138,13 @@ void splay_tree::add(ll x){
     if (x == 0) {
         return;
     }
-    pair<splay_tree, splay_tree> splitted_tree = split(x);//Зачем так сложно, можно было просто проверить на exists, а потом сделать splay
+    pair<splay_tree, splay_tree> splitted_tree = split(x);
     if (!splitted_tree.second.empty && splitted_tree.second.key == x) {
         *this = splitted_tree.first;
         merge(splitted_tree.second);
         splay(x);
     }
-    else {// И только тут split уже, как более дорогостоящую операцию
+    else {
         new_vertex(x);
         *left = splitted_tree.first;
         *right = splitted_tree.second;
@@ -203,6 +204,11 @@ void splay_tree::small_right_rotate() {
     *this = root;
     right->set_sum();
     set_sum();
+}
+
+splay_tree::~splay_tree() {
+    delete left;
+    delete right;
 }
 
 
