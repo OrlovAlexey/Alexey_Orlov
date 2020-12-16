@@ -55,6 +55,25 @@ public:
     }
 };
 
+long long binary_search(long long a[], long long left, long long right, long long value) {
+    long long middle;
+    while(true) {
+        middle = (left + right) / 2;
+        if (value < a[middle]) {
+            right = middle - 1;
+        }
+        else if (value > a[middle]) {
+            left = middle + 1;
+        }
+        else {
+            return middle;
+        }
+        if (left > right) {
+            return 0;
+        }
+    }
+}
+
 int main() {
     heap Heap;
     long long q;
@@ -73,13 +92,13 @@ int main() {
             scanf("%lld%lld", &p, &d);
             long long t;
             p--;
-            for ( long long i = 0; i < Heap.n; ++i ) {// Искать влоб элемент для уменьшения такая себе идея
-                //Слишком дорого по времени
-                if ( Heap.indexes[i] == p ) {
-                    t = i;
-                    break;
-                }
-            }
+//            for ( long long i = 0; i < Heap.n; ++i ) {
+//                if ( Heap.indexes[i] == p ) {
+//                    t = i;
+//                    break;
+//                }
+//            }// заменил цикл на двоичный поиск
+            t =  binary_search(Heap.indexes, 0, Heap.n, p);
             Heap.decreaseKey(t, d);
         }
         else if ( strcmp(input, "extractMin") == 0 ) {
