@@ -6,19 +6,14 @@ class String {
 private:
     size_t sz = 0;
     size_t capacity = 1;
-    char* str = nullptr;
+    char* str = nullptr;// nullptr при capacity = 1? Плохое поведение
 public:
     String() = default; // конструктор по умолчанию(без параметров)
 
     String(const char* s){
-//        sz = strlen(s);
-        for(; s[sz] != '\0'; ++sz){} // альтернатива пред строчке
+        for(; s[sz] != '\0'; ++sz){} // strlen(s)
         capacity = 2 * sz;
         this->str = new char[capacity];
-//        for (size_t i = 0; i < sz; ++i){
-//            this->str[i] = s[i];
-//        }// неэффективно
-//        memcpy(str, s, sz);
         std::copy(s, s + sz, str);
     }// конструктор с параметрами, нужно передать массив типа char, то есть строку
 
@@ -26,13 +21,8 @@ public:
         this->sz = sz;
         capacity = 2 * sz;
         str = new char[capacity];
-//        for (size_t i = 0; i < sz; ++i){
-//            str[i] = c;
-//        } //не эффективно
         memset(str, c, sz);
     }// конструктор с параметрами, нужно передать сколько символов и какой символ
-
-    //String(int n) = delete; //запрещает инициализпцию от типа int
 
     String(std::initializer_list<char> lst){
         sz = lst.size();
@@ -45,10 +35,6 @@ public:
         sz = s.sz;
         capacity = 2 * sz;
         str = new char[capacity];
-//        for(size_t i = 0; i < sz; ++i){
-//            str[i] = s.str[i];
-//        }// не эффективно
-//        memcpy(str, s.str, sz);
         std::copy(s.str, s.str + s.sz, str);
     }// конструктор копирования
 
@@ -59,20 +45,8 @@ public:
         this->str = s.str;
         s.str = nullptr;
     }// конструктор перемещения
-    //
-//
-//    String& operator= (const String& s) {
-//        delete[] str;
-//        sz = s.sz;
-//        capacity = s.capacity;
-//        str = new char[capacity];
-//
-//        std::copy(s.str, s.str + sz, str);
-////        for(size_t i = 0; i < sz; ++i){
-////            str[i] = s[i];
-////        }// неэффективно
-//        return *this;
-//    }// оператор плохого присваиваня
+    //Неплохо, только не понятно зачем. Он по умолчанию как раз так и работает
+    // А самое главное понимаешь ли ты зачем он существует
 
 
     String& operator= (String s) {
@@ -86,27 +60,18 @@ public:
         std::swap(str, s.str);
     }// своп
 
-//    String& operator=(const String& s) = default;
-
     String& operator+= (const char& c){
         this->push_back(c);
         return *this;
     }// оператор плюс-равно от символа
 
     String& operator+= (const String& s){
-//        for(size_t i = 0; i < s.sz; ++i){
-//            this->push_back(s[i]);
-//        }
         if (s.sz + sz > capacity){
             capacity = 2 * (sz + s.sz);
             char* copy = new char[capacity];
-//            for(size_t i = 0; i < sz; ++i){
-//                copy[i] = str[i];
-//            }// неэффективно
-//            memcpy(copy, str, sz);
             std::copy(str, str + sz, copy);
             std::copy(s.str, s.str + s.sz, copy + sz);
-            str = copy;
+            str = copy;// А старый кто удалять будет?
         }
         else {
             std::copy(s.str, s.str + s.sz, str + sz);
@@ -114,31 +79,6 @@ public:
         sz = sz + s.sz;
         return *this;
     }// оператор плюс-равно от строки
-
-    /*
-     * String operator+ (const String& s) const{ // в параметры передается правый операнд
-        String newStr;
-
-        size_t thislength = this->sz;
-        size_t otherlength = s.sz;
-        newStr.sz = thislength + otherlength;
-
-        newStr.str = new char[thislength + otherlength + 1];
-
-        int i = 0;
-        for(; i < thislength; ++i){
-            newStr.str[i] = this->str[i];
-        }
-
-        for(int j = 0; j < otherlength; ++j, ++i){
-            newStr.str[i] = s.str[j];
-        }
-
-        newStr.str[thislength + otherlength] = '\0';
-
-        return newStr;
-    }// плохая конкатенация
-     */
 
     bool operator== (const String& s) const{ // в параметры передается правый операнд, константная ссылка чтобы не производить лишнее копирование
         if (s.sz != this->sz) return false;
@@ -182,7 +122,7 @@ public:
     }// поиск первого вхождения подстроки subs
 
     size_t rfind(const String& subs) const{
-        for(size_t i = sz - 1; i > 0; --i){
+        for(size_t i = sz - 1; i > 0; --i){// А последний символ не проверяешь? А вдруг subs из одного символа состоит, который как раз в 0 позиции? Доделай
             if (str[i] == subs[0]){
                 bool mark = true;
                 size_t k = i+1;
@@ -203,10 +143,10 @@ public:
     String substr(const size_t& start, const size_t& count) const{
         String newStr;
         for(size_t i = start; i < start + count; ++i){
-            newStr.push_back(str[i]);
+            newStr.push_back(str[i]);// Поочерёдный push_back? Можно ведь сразу на нужный размер создать и скопировать данные.
         }
         return newStr;
-    }// поиск подстроки, начинающейся с индекса start и длины count
+    }//подстроки, начинающейся с индекса start и длины count
 
     size_t length() const{
         return sz;
@@ -216,13 +156,10 @@ public:
         if (2 * sz >= capacity){
             capacity *= 2;
             char* copy = new char[capacity];
-//            for(size_t i = 0; i < sz; ++i){
-//                copy[i] = str[i];
-//            }// неэффективно
-//            memcpy(copy, str, sz);
             std::copy(str, str + sz, copy);
             str = copy;
 //            delete[] copy;
+            // А старую строку кто удалять будет?
         }
         if (str == nullptr) str = new char[capacity];
         str[sz] = c;
@@ -230,6 +167,7 @@ public:
     }// добавляет символ в конец строки
 
     void pop_back(){
+        // А почему код уменьшения размера закоментирован?
 //        if(4*sz <= capacity){
 //            capacity /= 2;
 //            char* copy = new char[capacity];
@@ -242,12 +180,12 @@ public:
     }// удаляет последний символ из строки
 
     bool empty() const{
-        if (sz == 0) return true;
+        if (sz == 0) return true;// if true return true else return false....
         else return false;
     }// проверяет, пустая ли строка
 
     void clear(){
-        str = nullptr;
+        str = nullptr;// Зачем так
         sz = 0;
         capacity = 1;
     }// очищает строку
@@ -276,7 +214,7 @@ public:
         delete[] str;
     }// деструктор
 };
-
+// Три одинаковых оператора +? Компилятор сам сумеет скастовать, поправь
 String operator+ (const String& a, const String& b){
     String copy = a;
     copy += b;
@@ -303,24 +241,11 @@ std::ostream& operator<< (std::ostream& out, const String& s){
     return out;
 }// вывод в поток
 
-//std::istream& operator>> (std::istream& in, String& s){
-//    char c;
-//    s.clear();
-//    do{
-//        c = in.get();
-//        if (c == '\0' || c == '\n') {
-//            return in;
-//        }
-//        s.push_back(c);
-//    }while(!c);
-//    return in;
-//}// ввод из потока
-
 std::istream& operator>>(std::istream& in, String& s){
     char c;
     s.clear();
     in.get(c);
-    while(c != '\n' && c != ' ' && c != '\0'){
+    while(c != '\n' && c != ' ' && c != '\0'){// \t, \r
         s.push_back(c);
         if(!in.get(c))
             return in;
