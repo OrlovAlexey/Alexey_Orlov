@@ -55,7 +55,7 @@ public:
     }
 };
 
-long long binary_search(long long a[], long long left, long long right, long long value) {
+long long binary_search(long long a[], long long left, long long right, long long value) {// Интересно, но нет
     long long middle;
     while(true) {
         middle = (left + right) / 2;
@@ -98,7 +98,7 @@ int main() {
 //                    break;
 //                }
 //            }// заменил цикл на двоичный поиск
-            t =  binary_search(Heap.indexes, 0, Heap.n, p);
+            t =  binary_search(Heap.indexes, 0, Heap.n, p);// Ещё быстрее!!!! Хочу за O(1)!
             Heap.decreaseKey(t, d);
         }
         else if ( strcmp(input, "extractMin") == 0 ) {
