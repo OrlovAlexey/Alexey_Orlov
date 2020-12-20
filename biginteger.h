@@ -15,7 +15,7 @@ class BigInteger{
 private:
     static const int base = 10000;
     vector<int> num;
-    bool sign = true;
+    bool sign = true;// is_positive
     
 public:
     BigInteger() {
@@ -23,10 +23,11 @@ public:
         num.push_back(0);
         sign = true;
     }
-    BigInteger(const char* c) {
+    
+    BigInteger(const char* c) {// У тебя ведь уже есть конструктор от string, почему бы им и не воспользоваться?
         string s(c);
         if (s.length() == 0) {
-            num.clear();
+            num.clear();// int не должен быть пустым, даже в таких условиях, 0 нужно добавить
             sign = true;
         }
         else {
@@ -62,6 +63,7 @@ public:
 
         this->clearzeros();
     }
+    
     BigInteger(string s) {
         if(s.length() == 0) {
             num.clear();
@@ -94,14 +96,16 @@ public:
     BigInteger& operator+= (const BigInteger& b) {
         if (!this->sign) {
             if(!b.sign) {
-                return (this->changessign() += (-b)).changessign();
+                return (this->changessign() += (-b)).changessign();// В += и -= копирование запрещено. А в данном случае ты мог бы просто продолжить вычисления
+                // Будто бы оба числа положительные, и лишь в конце подумать а знаке... хотя можно и не думать, он и так правильный будет
             }
             else {
                 return (this->changessign() -= b).changessign();
             }
         }// проверка на знаки
         else if (!b.sign) {
-            *this -= (-b);
+            *this -= (-b);// И снова, копирование запрещено. Можно сделать sing=!sign, а потом *this -= b, в последствии изменив знак ещё раз (если останется отрицательный, 
+            // значит должен быть положительный и наоборот)
             return *this;
         }
         else {
@@ -133,14 +137,14 @@ public:
     BigInteger& operator-= (const BigInteger& b) {
         if (!this->sign) {
             if(!b.sign) {
-                return (this->changessign() -= (-b)).changessign();
+                return (this->changessign() -= (-b)).changessign();// Аналогично, просто вычесли и не думай о знаках
             }
             else {
                 return (this->changessign() += b).changessign();
             }
         }
         else if(!b.sign) {
-            *this += (-b);
+            *this += (-b);// И здесь так же
             return *this;
         }
         else {
@@ -336,6 +340,7 @@ public:
     //    explicit operator int() {}
 
     //    friend BigInteger operator+ (const BigInteger&, const BigInteger&);
+    // Эти операторы при правильном написании не должны быть friend
     friend BigInteger operator- (const BigInteger&, const BigInteger&);
     friend BigInteger operator* (const BigInteger&, const BigInteger&);
     friend BigInteger operator/ (const BigInteger&, const BigInteger&);
@@ -371,7 +376,7 @@ private:
         num[0] = 0;
     }// домножение на base bigInt'a(сдвиг влево)
 public:
-    bool sgn() const {
+    bool sgn() const {// То же самое делает i<0
         return sign;
     } // возвращает знак
 
@@ -388,7 +393,7 @@ public:
 istream& operator>> (istream& in, BigInteger& b) {
     char c;
     string s;
-    while (in.get(c)) {
+    while (in.get(c)) {// Ты можешь считать сразу всю строку в s
         if (c == ' ' || c == '\0' || c == '\n') {
             break;
         }
@@ -512,6 +517,7 @@ BigInteger operator""_bi(char x){
     return BigInteger(x);
 }
 
+// Зачем так сложно то, a*pow(10,precision)/b тебе в помощь
 string asDecimal_helper(const BigInteger& a, const BigInteger& b, long long precision) {
     BigInteger copy;
     copy.num.clear();
@@ -597,12 +603,14 @@ class Rational{
     bool sign = true;
 public:
     Rational() = default;
+    
     Rational(const BigInteger b1, const BigInteger b2) {
         if(b1 != 0) sign = ((b1.sgn() && b2.sgn()) || (!b1.sgn() && !b2.sgn()));
         BigInteger g = gcd(b1.big_abs(), b2.big_abs());
         num = b1.big_abs() / g;
         den = b2.big_abs() / g;
     }
+    
     Rational(const BigInteger& b) {
         if (b != 0) sign = b.sgn();
         num = b.big_abs();
@@ -618,10 +626,11 @@ public:
         if (copy != 0) copy.sign = !copy.sign;
         return copy;
     }
+    
     Rational& operator+= (const Rational& r) {
         if (!sign) {
             if(!r.sign) {
-                return (this->changessign() += (-r)).changessign();
+                return (this->changessign() += (-r)).changessign();// И вновь поправь, тут то уже точно просто это сделать
             }
             else {
                 return (this->changessign() -= r).changessign();
@@ -652,7 +661,7 @@ public:
     Rational& operator-= (const Rational& r) {
         if (!this->sign) {
             if(!r.sign) {
-                return (this->changessign() -= (-r)).changessign();
+                return (this->changessign() -= (-r)).changessign();// аналогично
             }
             else {
                 return (this->changessign() += r).changessign();
@@ -749,7 +758,7 @@ public:
         double d = std::stod(s);
         return d;
     }
-
+    // Почему все friend то?
     friend bool operator< (const Rational&, const Rational&);
     friend bool operator> (const Rational&, const Rational&);
     friend Rational operator+ (const Rational&, const Rational&);
