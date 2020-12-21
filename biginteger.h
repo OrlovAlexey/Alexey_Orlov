@@ -15,42 +15,41 @@ class BigInteger{
 private:
     static const int base = 10000;
     vector<int> num;
-    bool sign = true;// is_positive
-    
+    bool is_positive = true;// is_positive
+    //так sign понятнее
 public:
     BigInteger() {
         num.clear();
         num.push_back(0);
-        sign = true;
+        is_positive = true;
     }
-    
-    BigInteger(const char* c) {// У тебя ведь уже есть конструктор от string, почему бы им и не воспользоваться?
-        string s(c);
-        if (s.length() == 0) {
-            num.clear();// int не должен быть пустым, даже в таких условиях, 0 нужно добавить
-            sign = true;
+
+    BigInteger(string s) {
+      if (s.length() == 0) {
+        num.clear(); // int не должен быть пустым, даже в таких условиях, 0 нужно добавить
+        num.push_back(0);
+        is_positive = true;
+      } else {
+        if (s[0] == '-') {
+          is_positive = false;
+          s = s.substr(1);
+        } else {
+          is_positive = true;
         }
-        else {
-            if (s[0] == '-') {
-                sign = false;
-                s = s.substr(1);
-            }
-            else {
-                sign = true;
-            }
-            for (long long i = s.length(); i > 0; i -= 4){
-                if (i < 4)
-                    num.push_back(std::stoi(s.substr(0, i)));
-                else
-                    num.push_back(std::stoi(s.substr(i - 4, 4)));
-            }
+        for (long long i = s.length(); i > 0; i -= 4) {
+          if (i < 4)
+            num.push_back(atoi(s.substr(0, i).c_str()));
+          else
+            num.push_back(atoi(s.substr(i - 4, 4).c_str()));
         }
-        this->clearzeros();
+      }
+      this->clearzeros();
     }
+
     BigInteger(int x) {
         if (x < 0) {
             x = -x;
-            sign = false;
+            is_positive = false;
         }
         if (x == 0) {
             num.push_back(x);
@@ -63,49 +62,48 @@ public:
 
         this->clearzeros();
     }
-    
-    BigInteger(string s) {
-        if(s.length() == 0) {
-            num.clear();
-            sign = true;
-        }
-        else {
-            if(s[0]=='-') {
-                sign = false;
-                s = s.substr(1);
-            }
-            else {
-                sign = true;
-            }
-            for (long long i = s.length(); i > 0; i-=4){
-                if (i < 4)
-                    num.push_back(atoi(s.substr(0, i).c_str()));
-                else
-                    num.push_back(atoi(s.substr(i - 4, 4).c_str()));
-            }
-        }
-        this->clearzeros();
-    }
-
 
     BigInteger operator- () const {
         BigInteger copy = *this;
-        copy.sign = !copy.sign;
+        copy.is_positive = !copy.is_positive;
         return copy;
     }
     BigInteger& operator+= (const BigInteger& b) {
-        if (!this->sign) {
-            if(!b.sign) {
-                return (this->changessign() += (-b)).changessign();// В += и -= копирование запрещено. А в данном случае ты мог бы просто продолжить вычисления
-                // Будто бы оба числа положительные, и лишь в конце подумать а знаке... хотя можно и не думать, он и так правильный будет
+        if (!this->is_positive) {
+            if(!b.is_positive) {
+                int over_digit = 0;
+                size_t n1 = num.size();
+                size_t n2 = b.num.size();
+                for (size_t i = 0; i < max(n1, n2); ++i) {
+                    if (n1 <= i && i < n2) {
+                        num.push_back(0);
+                    }// выравнивает число, к которому прибавляем
+
+                    int copy = num[i];
+                    if (n2 <= i && i < n1) {
+                        num[i] = (num[i] + over_digit) % base;
+                        over_digit = (copy + over_digit) / base;
+                    } else {
+                        num[i] = (num[i] + b.num[i] + over_digit) % base;
+                        over_digit = (copy + b.num[i] + over_digit) / base;
+                    }// прибавление
+
+                    if (i == max(n1, n2) - 1 && over_digit != 0) {
+                        num.push_back(over_digit);
+                    }// конечный разряд
+                }
+                return *this;
             }
             else {
                 return (this->changessign() -= b).changessign();
             }
         }// проверка на знаки
-        else if (!b.sign) {
-            *this -= (-b);// И снова, копирование запрещено. Можно сделать sing=!sign, а потом *this -= b, в последствии изменив знак ещё раз (если останется отрицательный, 
+        else if (!b.is_positive) {
+            //*this -= (-b);// И снова, копирование запрещено. Можно сделать sing=!is_positive, а потом *this -= b, в последствии изменив знак ещё раз (если останется отрицательный,
             // значит должен быть положительный и наоборот)
+            is_positive = !is_positive;// поправил
+            *this -= b;
+            is_positive = !is_positive;
             return *this;
         }
         else {
@@ -135,16 +133,45 @@ public:
         }
     }
     BigInteger& operator-= (const BigInteger& b) {
-        if (!this->sign) {
-            if(!b.sign) {
-                return (this->changessign() -= (-b)).changessign();// Аналогично, просто вычесли и не думай о знаках
+        if (!this->is_positive) {
+            if(!b.is_positive) {
+              if (*this > b) {
+                BigInteger temp = *this;
+                *this = b;
+                return (*this -= temp).changessign();
+              }
+              else {
+                bool over_digit = 0;
+                size_t n1 = num.size();
+                size_t n2 = b.num.size();
+                for (size_t i = 0; i < max(n1, n2); ++i) {
+                  if (i < n2) {
+                    num[i] -= static_cast<int>(over_digit) + b.num[i];
+                  }
+                  else {
+                    num[i] -= static_cast<int>(over_digit);
+                  }// уменьшение разряда
+
+                  if (num[i] < 0) {
+                    over_digit = true;
+                    num[i] += base;
+                  }
+                  else {
+                    over_digit = false;
+                  }// проверка если разряд оказался отрицательным, прибавление к нему 10000 в этом случае®®
+                }
+                this->clearzeros();
+                return *this;
+              }
             }
             else {
                 return (this->changessign() += b).changessign();
             }
         }
-        else if(!b.sign) {
-            *this += (-b);// И здесь так же
+        else if(!b.is_positive) {
+            is_positive = !is_positive;
+            *this += b;// И здесь так же
+            is_positive = !is_positive;
             return *this;
         }
         else {
@@ -216,16 +243,16 @@ public:
         return copy;
     }
     BigInteger& operator*= (const BigInteger& b) {
-        if ((sign && b.sign) || (!sign && !b.sign)) {
-            sign = true;
+        if ((is_positive && b.is_positive) || (!is_positive && !b.is_positive)) {
+            is_positive = true;
         }
         else {
-            sign =false;
+            is_positive = false;
         } // правильный знак
 
         BigInteger copy = *this;
         num.clear();
-        num.resize(copy.num.size() + b.num.size());
+        num.resize(copy.num.size() + b.num.size() + 1);
 
         for(size_t i = 0; i < copy.num.size(); ++i){
             long long over_digit = 0;
@@ -251,29 +278,19 @@ public:
         }//проверка на деление на ноль
         if (b.num.size() > num.size()) {
             *this = 0;
-            sign = true;
+            is_positive = true;
             return *this;
         }
-        if ((sign && b.sign) || (!sign && !b.sign)) {
-            sign = true;
+        if ((is_positive && b.is_positive) || (!is_positive && !b.is_positive)) {
+            is_positive = true;
         }
         else {
-            sign = false;
+            is_positive = false;
         }//проверка на знак
-        /*
-        if (num.size() - b.num.size() < 2 || b.num.size() - num.size() < 2) {
-            BigInteger quot = 0;
-            for(BigInteger i = *this - b; i >= 0; i -= b) {
-                quot++;
-            }
-            *this = quot;
-            return *this;
-        }// простой алгоритм
-        */
         BigInteger copy = *this;
         num.clear();
         BigInteger remainder = 0;
-        remainder.sign = true;
+        remainder.is_positive = true;
         num.resize(copy.num.size());
 
         for (int i = copy.num.size() - 1; i >= 0; --i) {
@@ -285,8 +302,8 @@ public:
             int right = base;
             while (left <= right) {
                 int middle = (left + right) / 2;
-                BigInteger temp = b * middle;
-                temp.sign = true;
+                BigInteger temp = (b * middle);
+                temp.is_positive = true;
                 if (temp <= remainder) {
                     find = middle;
                     left = middle + 1;
@@ -296,19 +313,48 @@ public:
                 } // ищем число меньше или равно частичного остатка
             }
             num[i] = find % base;
-            remainder -= (b >= 0 ? b * (find) : -(b * (find)));
+            remainder -= (b >= 0 ? (b * (find)) : -(b * (find)));
         }// деление столбиком
         clearzeros();
         return *this;
     }
     BigInteger& operator%= (const BigInteger& b) {
-        *this = *this - (*this / b) * b;
+        BigInteger copy = *this;
+        num.clear();
+        BigInteger remainder = 0;
+        remainder.is_positive = true;
+        num.resize(copy.num.size());
+
+        for (int i = copy.num.size() - 1; i >= 0; --i) {
+            remainder.pwr_4();
+            remainder.num[0] = copy.num[i];
+            remainder.clearzeros();
+            int find = 0;
+            int left = 0;
+            int right = base;
+            while (left <= right) {
+                int middle = (left + right) / 2;
+                BigInteger temp = (b * middle);
+                temp.is_positive = true;
+                if (temp <= remainder) {
+                    find = middle;
+                    left = middle + 1;
+                }
+                else {
+                    right = middle - 1;
+                } // ищем число меньше или равно частичного остатка
+            }
+            num[i] = find % base;
+            remainder -= (b >= 0 ? (b * (find)) : -(b * (find)));
+        }
+        *this = remainder;
+        clearzeros();
         return *this;
     }
 
     string toString() const {
         string s = "";
-        if (!sign) {
+        if (!is_positive) {
             s += "-";
         }
         if (num.size() == 1 && num[0]== 0) {
@@ -339,20 +385,17 @@ public:
     }
     //    explicit operator int() {}
 
-    //    friend BigInteger operator+ (const BigInteger&, const BigInteger&);
     // Эти операторы при правильном написании не должны быть friend
-    friend BigInteger operator- (const BigInteger&, const BigInteger&);
-    friend BigInteger operator* (const BigInteger&, const BigInteger&);
-    friend BigInteger operator/ (const BigInteger&, const BigInteger&);
-    friend BigInteger operator% (const BigInteger&, const BigInteger&);
+    // у меня /=, %= написаны через -, *, /
+    // но это можно пофиксить
+    // но в <, >, >> используются знаки и не только
     friend bool operator< (const BigInteger&, const BigInteger&);
     friend bool operator> (const BigInteger&, const BigInteger&);
     friend istream& operator>> (istream&, BigInteger&);
     friend string asDecimal_helper(const BigInteger&, const BigInteger&, long long);
-//    friend ostream& operator<< (ostream&, const BigInteger&);
 private:
     BigInteger& changessign() {
-        sign = !sign;
+        is_positive = !is_positive;
         return *this;
     }// унарный минус без создания копии
 
@@ -361,7 +404,7 @@ private:
             num.pop_back();
         }
         if (num.size() == 1 && num[0] == 0) {
-            sign = true;
+            is_positive = true;
         }
     }// удаляет лишние нули в начале числа
 
@@ -375,41 +418,52 @@ private:
         }
         num[0] = 0;
     }// домножение на base bigInt'a(сдвиг влево)
+
+    BigInteger operator* (int a) const {// добавил умножение bigint на int для /=
+        BigInteger copy = *this;
+        copy.num.clear();
+        copy.num.resize(num.size() + 1);
+        int over_digit = 0;
+        for (int i = 0; i < (int)num.size() || over_digit != 0; ++i) {
+            int temp;
+            if (i < (int)num.size()) {
+                temp = num[i] * a + over_digit;
+            }
+            else {
+                temp = over_digit;
+            }
+            over_digit = temp / base;
+            copy.num[i] = temp % base;
+        }
+        copy.clearzeros();
+        return copy;
+    }
 public:
     bool sgn() const {// То же самое делает i<0
-        return sign;
+        return is_positive;//да, но это же быстрее
     } // возвращает знак
 
     BigInteger big_abs() const {
         BigInteger copy = *this;
-        copy.sign = true;
+        copy.is_positive = true;
         return copy;
     } // bigInteger модуль
 };
 
-
-
-
 istream& operator>> (istream& in, BigInteger& b) {
-    char c;
     string s;
-    while (in.get(c)) {// Ты можешь считать сразу всю строку в s
-        if (c == ' ' || c == '\0' || c == '\n') {
-            break;
-        }
-        s += c;
-    }
+    in >> s;//упростил
     b.num.clear();
     if (s.length() == 0) {
-        b.sign = true;
+        b.is_positive = true;
     }
     else {
         if (s[0] == '-') {
-            b.sign = false;
+            b.is_positive = false;
             s = s.substr(1);
         }
         else {
-            b.sign = true;
+            b.is_positive = true;
         }
         for (long long i = s.length(); i > 0; i-=4) {
             if (i < 4) {
@@ -430,23 +484,23 @@ ostream& operator<< (ostream& out, const BigInteger& b) {
 }
 
 bool operator< (const BigInteger& a, const BigInteger& b) {
-    if (!a.sign && b.sign) {
+    if (!a.is_positive && b.is_positive) {
         return true;
     }
-    if (a.sign && !b.sign) {
+    if (a.is_positive && !b.is_positive) {
         return false;
     }
-    if (a.sign && b.sign && (a.num.size() != b.num.size())) {
+    if (a.is_positive && b.is_positive && (a.num.size() != b.num.size())) {
         return a.num.size() < b.num.size();
     }
-    if (!a.sign && !b.sign && (a.num.size() != b.num.size())) {
+    if (!a.is_positive && !b.is_positive && (a.num.size() != b.num.size())) {
         return a.num.size() > b.num.size();
     }
     for (int i = a.num.size() - 1; i >= 0; --i) {
-        if ((a.num[i] != b.num[i]) && (a.sign && b.sign)) {
+        if ((a.num[i] != b.num[i]) && (a.is_positive && b.is_positive)) {
             return a.num[i] < b.num[i];
         }
-        else if ((a.num[i] != b.num[i]) && (!a.sign && !b.sign)) {
+        else if ((a.num[i] != b.num[i]) && (!a.is_positive && !b.is_positive)) {
             return a.num[i] > b.num[i];
         }
     }
@@ -454,22 +508,22 @@ bool operator< (const BigInteger& a, const BigInteger& b) {
 }
 
 bool operator> (const BigInteger& a, const BigInteger& b) {
-    if (a.sign && !b.sign) {
+    if (a.is_positive && !b.is_positive) {
         return true;
     }
-    if (!a.sign && b.sign) {
+    if (!a.is_positive && b.is_positive) {
         return false;
     }
-    if (a.sign && b.sign && (a.num.size() != b.num.size())) {
+    if (a.is_positive && b.is_positive && (a.num.size() != b.num.size())) {
         return a.num.size() > b.num.size();
     }
-    if (!a.sign && !b.sign && (a.num.size() != b.num.size())) {
+    if (!a.is_positive && !b.is_positive && (a.num.size() != b.num.size())) {
         return a.num.size() < b.num.size();
     }
     for (int i = a.num.size() - 1; i >= 0; --i) {
-        if ((a.num[i] != b.num[i]) && (a.sign && b.sign)) {
+        if ((a.num[i] != b.num[i]) && (a.is_positive && b.is_positive)) {
             return a.num[i] > b.num[i];
-        } else if ((a.num[i] != b.num[i]) && (!a.sign && !b.sign)) {
+        } else if ((a.num[i] != b.num[i]) && (!a.is_positive && !b.is_positive)) {
             return a.num[i] < b.num[i];
         }
     }
@@ -494,13 +548,13 @@ BigInteger operator* (const BigInteger& a, const BigInteger& b) {
     return copy;
 }
 
-BigInteger operator/ (const BigInteger& a,const BigInteger& b){
+BigInteger operator/ (const BigInteger& a, const BigInteger& b){
     BigInteger copy = a;
     copy /= b;
     return copy;
 }
 
-BigInteger operator% (const BigInteger& a,const BigInteger& b){
+BigInteger operator% (const BigInteger& a, const BigInteger& b){
     BigInteger copy = a;
     copy %= b;
     return copy;
@@ -517,51 +571,32 @@ BigInteger operator""_bi(char x){
     return BigInteger(x);
 }
 
+BigInteger pow(BigInteger a, long long degree) {
+    if (degree == 0) {
+        return 1;
+    }
+    if (degree % 2 != 0) {
+        return pow(a, degree - 1) * a;
+    }
+    else {
+        BigInteger b = pow(a, degree / 2);
+        return (b * b);
+    }
+}
+
 // Зачем так сложно то, a*pow(10,precision)/b тебе в помощь
 string asDecimal_helper(const BigInteger& a, const BigInteger& b, long long precision) {
     BigInteger copy;
-    copy.num.clear();
-    copy.sign = true;
-    BigInteger remainder = 0;
-    remainder.sign = true;
-    copy.num.resize(a.num.size());
-
-    BigInteger dec_part = 0;
-    dec_part.num.resize(precision / 4 + 1);
-
-    for (long long i = a.num.size() - 1; i >= -(precision / 4 + 1); --i) {
-        remainder.pwr_4();
-        remainder.num[0] = (i >= 0 ? a.num[i] : 0);
-        remainder.clearzeros();
-        int find = 0;
-        int left = 0;
-        int right = 10000;
-        while (left <= right) {
-            int middle = (left + right) / 2;
-            BigInteger temp = b * middle;
-            temp.sign = true;
-            if (temp <= remainder) {
-                find = middle;
-                left = middle + 1;
-            }
-            else {
-                right = middle - 1;
-            }
-        }
-        if (i >= 0) {
-            copy.num[i] = find % 10000;
-        }
-        else {
-            dec_part.num[i + (precision / 4 + 1)] = find % 10000;
-        }
-        remainder -= b * (find);
-    }// деление столбиком с остатком
-    copy.clearzeros();
+    copy = a / b;
+    copy.is_positive = true;
+    BigInteger remainder;
+    remainder = (a * pow(BigInteger(10), precision)) / b;
+    remainder.is_positive = true;
 
     string s = "";
     s += copy.toString();
     s += '.';
-    int n = dec_part.num[dec_part.num.size() - 1];
+    int n = remainder.num[remainder.num.size() - 1];
     if (n < 10) {
         s += "000";
     } else if (n < 100) {
@@ -569,106 +604,94 @@ string asDecimal_helper(const BigInteger& a, const BigInteger& b, long long prec
     } else if (n < 1000) {
         s += "0";
     }
-    s += dec_part.toString();
-    if (precision % 4 == 0) {
-        s.pop_back(), s.pop_back(), s.pop_back(), s.pop_back();
-    }
-    else if (precision % 4 == 1) {
-        s.pop_back(), s.pop_back(), s.pop_back();
-    }
-    else if (precision % 4 == 2) {
-        s.pop_back(), s.pop_back();
-    }
-    else if (precision % 4 == 3) {
-        s.pop_back();
-    }
+    s += remainder.toString();
+    if (precision == 0) s.pop_back();
     return s;
-}
-
-BigInteger gcd(BigInteger a, BigInteger b) {
-    if (a == 1) {
-        return 1;
-    }
-    if (b == 0) {
-        return a;
-    }
-    else {
-        return gcd(b, a % b);
-    }
 }
 
 class Rational{
     BigInteger num;
     BigInteger den;
-    bool sign = true;
+    bool is_positive = true;
 public:
     Rational() = default;
-    
+
     Rational(const BigInteger b1, const BigInteger b2) {
-        if(b1 != 0) sign = ((b1.sgn() && b2.sgn()) || (!b1.sgn() && !b2.sgn()));
+        if(b1 != 0) is_positive = ((b1.sgn() && b2.sgn()) || (!b1.sgn() && !b2.sgn()));
         BigInteger g = gcd(b1.big_abs(), b2.big_abs());
         num = b1.big_abs() / g;
         den = b2.big_abs() / g;
     }
-    
+
     Rational(const BigInteger& b) {
-        if (b != 0) sign = b.sgn();
+        if (b != 0) is_positive = b.sgn();
         num = b.big_abs();
         den = 1;
     }
     Rational(int a) {
         num = abs(a);
         den = 1;
-        sign = (a >= 0);
+        is_positive = (a >= 0);
     }
     Rational operator-() const {
         Rational copy = *this;
-        if (copy != 0) copy.sign = !copy.sign;
+        if (copy != 0) copy.is_positive = !copy.is_positive;
         return copy;
     }
-    
+
     Rational& operator+= (const Rational& r) {
-        if (!sign) {
-            if(!r.sign) {
-                return (this->changessign() += (-r)).changessign();// И вновь поправь, тут то уже точно просто это сделать
+        if (!is_positive) {
+            if(!r.is_positive) {
+                BigInteger n1 = (r.den * num + den * r.num).big_abs();
+                BigInteger d1 = (den * r.den).big_abs();
+                BigInteger g1 = gcd(n1, d1);
+                num = n1 / g1;
+                den = d1 / g1;
+                return *this;
             }
             else {
                 return (this->changessign() -= r).changessign();
             }
         }// проверка на знаки
-        else if (!r.sign) {
-            *this -= (-r);
+        else if (!r.is_positive) {
+            is_positive = !is_positive;
+            *this -= r;
+            is_positive = !is_positive;
             return *this;
         }
-        else { //
+        else {
             BigInteger n1 = (r.den * num + den * r.num).big_abs();
-            cout << n1 <<'\n';
             BigInteger d1 = (den * r.den).big_abs();
-            cout << d1 <<'\n';
-
             BigInteger g1 = gcd(n1, d1);
-            cout << g1 <<'\n';
-
             num = n1 / g1;
-            cout << num <<'\n';
-
             den = d1 / g1;
-            cout << den <<'\n';
-
             return *this;
         }
     }
     Rational& operator-= (const Rational& r) {
-        if (!this->sign) {
-            if(!r.sign) {
-                return (this->changessign() -= (-r)).changessign();// аналогично
+        if (!this->is_positive) {
+            if(!r.is_positive) {
+                if (*this > r) {
+                    Rational temp = *this;
+                    *this = r;
+                    return (*this -= temp).changessign();
+                } else {
+                    BigInteger n1 = (r.den * num - den * r.num).big_abs();
+                    BigInteger d1 = (den * r.den).big_abs();
+                    BigInteger g1 = gcd(n1, d1);
+                    num = n1 / g1;
+                    den = d1 / g1;
+                    return *this;
+                }
             }
             else {
                 return (this->changessign() += r).changessign();
             }
         }
-        else if(!r.sign) {
-            *this += (-r);
+        else if(!r.is_positive) {
+            is_positive = !is_positive;
+            *this += r;
+            is_positive = !is_positive;
             return *this;
         }
         else {
@@ -690,7 +713,7 @@ public:
         if (num == 0 && r.num == 0) {
             return true;
         }
-        if (sign != r.sign) {
+        if (is_positive != r.is_positive) {
             return false;
         }
         if (num == r.num && den == r.den) {
@@ -708,31 +731,26 @@ public:
         return ((*this > r) || (*this == r));
     }
     Rational& operator*= (const Rational& r) {
-        sign = ((sign && r.sign) || (!sign && !r.sign));
-//        cout << num.sgn() << " " << num << " " << den.sgn() << " " << den <<'\n';
-//        cout << r.num.sgn() << " " << r.num << " " << r.den.sgn() << " " << r.den <<'\n';
-
-        num *= r.num;// 1 *= 1
-        den *= r.den;// 200 *= 200
-        BigInteger g = gcd(num, den);
+        is_positive = ((is_positive && r.is_positive) || (!is_positive && !r.is_positive));
+        num *= r.num;
+        den *= r.den;
+        BigInteger g = gcd(num.big_abs(), den.big_abs());
         num /= g;
-//        cout << den << '\n';
         den /= g;
-//        cout << den << '\n';
         return *this;
     }
     Rational& operator/= (const Rational& r) {
-        sign = ((sign && r.sign) || (!sign && !r.sign));
+        is_positive = ((is_positive && r.is_positive) || (!is_positive && !r.is_positive));
         num *= r.den;
         den *= r.num;
-        BigInteger g = gcd(num, den);
+        BigInteger g = gcd(num.big_abs(), den.big_abs());
         num /= g;
         den /= g;
         return *this;
     }
     string toString() const {
         string s = "";
-        if (!sign) s += "-";
+        if (!is_positive) s += "-";
         if (den != 1) {
             s += num.toString();
             s += '/';
@@ -749,7 +767,7 @@ public:
     }
     string asDecimal(size_t precision = 0) const {
         string s = "";
-        if (!sign) s += "-";
+        if (!is_positive) s += "-";
         s += asDecimal_helper(num, den, precision);
         return s;
     }
@@ -759,43 +777,42 @@ public:
         return d;
     }
     // Почему все friend то?
+    // в += и -= используются
     friend bool operator< (const Rational&, const Rational&);
     friend bool operator> (const Rational&, const Rational&);
-    friend Rational operator+ (const Rational&, const Rational&);
-    friend Rational operator- (const Rational&, const Rational&);
-    friend Rational operator* (const Rational&, const Rational&);
-    friend Rational operator/ (const Rational&, const Rational&);
-
-//    void print() {
-//        if (!sign) cout << "-";
-//        if (den != 1) {
-//            cout << num << "/" << den << '\n';
-//        }
-//        else {
-//            cout << num <<'\n';
-//        }
-//    } // временный вывод
-
+private:
     Rational& changessign() {
-        sign = !sign;
+        is_positive = !is_positive;
         return *this;
     }// унарный минус без создания копии
 
+
+    BigInteger gcd(BigInteger a, BigInteger b) {
+        if (a == 1) {
+            return 1;
+        }
+        if (b == 0) {
+            return a;
+        }
+        else {
+            return gcd(b, a % b);
+        }
+    }
 };
 
 
 
 bool operator< (const Rational& a, const Rational& b) {
-    if (!a.sign && b.sign) {
+    if (!a.is_positive && b.is_positive) {
         return true;
     }
-    if (a.sign && !b.sign) {
+    if (a.is_positive && !b.is_positive) {
         return false;
     }
-    if (a.sign && b.sign) {
+    if (a.is_positive && b.is_positive) {
         return a.num * b.den < b.num * a.den;
     }
-    if (!a.sign && !b.sign) { // 1 * 100 > 1 * 100
+    if (!a.is_positive && !b.is_positive) {
         return a.num * b.den > b.num * a.den;
     }
     return false;
@@ -808,18 +825,12 @@ bool operator> (const Rational& a, const Rational& b) {
 Rational operator+ (const Rational& r1, const Rational& r2) {
     Rational copy = r1;
     copy += r2;
-    if (copy == 0) {
-        copy.sign = true;
-    }
     return copy;
 }
 
 Rational operator- (const Rational& r1, const Rational& r2) {
     Rational copy = r1;
     copy -= r2;
-    if (copy == 0) {
-        copy.sign = true;
-    }
     return copy;
 }
 
