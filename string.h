@@ -6,7 +6,8 @@ class String {
 private:
     size_t sz = 0;
     size_t capacity = 1;
-    char* str = nullptr;// nullptr при capacity = 1? Плохое поведение
+    char* str = "";// nullptr при capacity = 1? Плохое поведение
+    //исправил, вроде бы
 public:
     String() = default; // конструктор по умолчанию(без параметров)
 
@@ -47,7 +48,8 @@ public:
     }// конструктор перемещения
     //Неплохо, только не понятно зачем. Он по умолчанию как раз так и работает
     // А самое главное понимаешь ли ты зачем он существует
-
+    //Наверно для копирования без копирования
+    //чтобы сразу в память вставлять, хотя ладно, пока не знаю
 
     String& operator= (String s) {
         swap(s);
@@ -68,10 +70,12 @@ public:
     String& operator+= (const String& s){
         if (s.sz + sz > capacity){
             capacity = 2 * (sz + s.sz);
-            char* copy = new char[capacity];
-            std::copy(str, str + sz, copy);
-            std::copy(s.str, s.str + s.sz, copy + sz);
-            str = copy;// А старый кто удалять будет?
+            char* copy = str;
+            str = new char[capacity];
+            std::copy(copy, copy + sz, str);
+            std::copy(s.str, s.str + s.sz, str + sz);
+            delete[] copy;// А старый кто удалять будет?
+            // удалил вроде
         }
         else {
             std::copy(s.str, s.str + s.sz, str + sz);
@@ -122,11 +126,11 @@ public:
     }// поиск первого вхождения подстроки subs
 
     size_t rfind(const String& subs) const{
-        for(size_t i = sz - 1; i > 0; --i){// А последний символ не проверяешь? А вдруг subs из одного символа состоит, который как раз в 0 позиции? Доделай
-            if (str[i] == subs[0]){
+        for(int i = sz - 1; i >= 0; --i){// А последний символ не проверяешь? А вдруг subs из одного символа состоит, который как раз в 0 позиции? Доделай
+            if (str[i] == subs[0]){// поправил
                 bool mark = true;
-                size_t k = i+1;
-                for(size_t j = 1; j < subs.sz; ++j, ++k){
+                int k = i + 1;
+                for(int j = 1; j < (int)subs.sz; ++j, ++k){
                     if (str[k] != subs[j]) {
                         mark = false;
                         break;
@@ -141,10 +145,12 @@ public:
     }// поиск последнего вхождения подстроки subs
 
     String substr(const size_t& start, const size_t& count) const{
-        String newStr;
-        for(size_t i = start; i < start + count; ++i){
-            newStr.push_back(str[i]);// Поочерёдный push_back? Можно ведь сразу на нужный размер создать и скопировать данные.
-        }
+        String newStr(count);
+//        for(size_t i = start; i < start + count; ++i){
+//            newStr.push_back(str[i]);// Поочерёдный push_back? Можно ведь сразу на нужный размер создать и скопировать данные.
+//        }
+        newStr.clear();
+        std::copy(str[start], str[start + count - 1], newStr.str);// так?
         return newStr;
     }//подстроки, начинающейся с индекса start и длины count
 
@@ -155,10 +161,10 @@ public:
     void push_back(const char& c){
         if (2 * sz >= capacity){
             capacity *= 2;
-            char* copy = new char[capacity];
-            std::copy(str, str + sz, copy);
-            str = copy;
-//            delete[] copy;
+            char* copy = str;
+            str = new char[capacity];
+            std::copy(copy, copy + sz, str);
+            delete[] copy;
             // А старую строку кто удалять будет?
         }
         if (str == nullptr) str = new char[capacity];
@@ -168,25 +174,24 @@ public:
 
     void pop_back(){
         // А почему код уменьшения размера закоментирован?
-//        if(4*sz <= capacity){
-//            capacity /= 2;
-//            char* copy = new char[capacity];
-////            memcpy(copy, str, sz);
-//            std::copy(str, str + sz, copy);
-//            str = copy;
-//        }
+        if(4*sz <= capacity){// насколько я помню, с ним не заходило
+            capacity /= 2;
+            char* copy = new char[capacity];
+            std::copy(str, str + sz, copy);
+            str = copy;
+        }
         sz--;
         str[sz] = '\0';
     }// удаляет последний символ из строки
 
     bool empty() const{
-        if (sz == 0) return true;// if true return true else return false....
-        else return false;
+        // if true return true else return false....
+        return (sz == 0);
     }// проверяет, пустая ли строка
 
     void clear(){
-        str = nullptr;// Зачем так
-        sz = 0;
+        str = "";// Зачем так
+        sz = 0;// тогда так
         capacity = 1;
     }// очищает строку
 
@@ -221,19 +226,6 @@ String operator+ (const String& a, const String& b){
     return copy;
 }// хорошая конкатенация
 
-String operator+ (const String& a, const char& b){
-    String copy = a;
-    copy += b;
-    return copy;
-}// конкатенация от строки и символа
-
-String operator+ (const char& a, const String& b){
-    String copy("");
-    copy.push_back(a);
-    copy += b;
-    return copy;
-}// конкатенация от символа и строки
-
 std::ostream& operator<< (std::ostream& out, const String& s){
     for(size_t i = 0; i < s.length(); ++i){
         out << s[i];
@@ -245,11 +237,10 @@ std::istream& operator>>(std::istream& in, String& s){
     char c;
     s.clear();
     in.get(c);
-    while(c != '\n' && c != ' ' && c != '\0'){// \t, \r
+    while(c != '\n' && c != ' ' && c != '\0' && c != '\t' && c != '\r'){// \t, \r
         s.push_back(c);
         if(!in.get(c))
             return in;
     }
     return in;
 }
-
