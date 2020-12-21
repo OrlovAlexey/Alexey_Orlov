@@ -62,16 +62,19 @@ int main() {
     ll n, m;
     cin >> n;
     ll a[n];
+    
     for (ll i = 0; i < n; ++i) {
         cin >> a[i];
-//        if (i % 2 != 0) {
-//            a[i] = -a[i];
+//        
 //        }
     }
+    
     ll s[n];
     build(s, a, n);
+    
     cin >> m;
     ll x, l, r;
+    
     for (ll i = 0; i < m; ++i) {
         cin >> x >> l >> r;
         if (x == 0) {
