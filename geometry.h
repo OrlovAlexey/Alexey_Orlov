@@ -15,8 +15,8 @@ using std::set;
 using std::pair;
 
 bool cmp(double a, double b) {
-    double eps = 0.000001;
-    if (abs(a - b) <= eps) {
+    double eps = 0.000001;//1e-6
+    if (abs(a - b) <= eps) {// return abs(a - b) <= eps
         return true;
     }
     else {
@@ -294,7 +294,7 @@ bool Polygon::operator== (const Shape& shape) const {
         flag = true;
         for (int j = 0; j < size2; ++j) {
             if (vertices[(i+j) % size1] != poly.vertices[j]) {
-                flag = false;
+                flag = false;// Здесь по хорошему стоит делать сразу break, тогда в 99% случаев алгоритм станет линеен, а не квадратичен как сейчас
             }
         }
         if (flag) {
@@ -327,11 +327,12 @@ bool Polygon::operator!= (const Shape& shape) const {
     return !(*this == shape);
 }
 
+// Эквивалентные расстояния не гарантируют подобие, углы при этом можно сделать какие угодно, см классические цепочки
 bool Polygon::isCongruentTo(const Shape& shape) {
     Polygon poly;
     try {
         poly = dynamic_cast<const Polygon&>(shape);
-    } catch (...) {
+    } catch (...) {// - Кажется у вас outOfRange - хмм, кидай false... ладно, это следующий семестр 
         return false;
     }
     vector<double> sides1, sides2;
@@ -342,7 +343,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
     }
     sides1.clear();
     for (int i = 0; i < size1; ++i) {
-        sides1.push_back(point_distance(vertices[i],vertices[(i+1) % size1]));
+        sides1.push_back(point_distance(vertices[i],vertices[(i+1) % size1]));// Для начала векторам можно было resize сделать.
     }
     sides2.clear();
     for (int i = 0; i < size2; ++i) {
@@ -353,7 +354,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         flag = true;
         for (int j = 0; j < size2; ++j) {
             if (!cmp(sides1[(i + j) % size1], sides2[j])) {
-                flag = false;
+                flag = false;// А если ещё сюда добавить break, то можно и не думать о создании векторов и кешировании вычислений
             }
         }
         if (flag) {
@@ -372,32 +373,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         }
     }
     return false;
-//    double temp;
-//    for (int i = 0; i < size1; ++i) {
-//        temp = sides1[i];
-//        auto it = std::find(sides2.begin(), sides2.end(), temp);
-//        if (it == sides2.end()) {
-//            return false; // в логике ошибка
-//        }
-//        sides2.erase(it);
-//    }
-//    return true;
-}
-
-//double angle(Point a, Point b, Point c) {
-//    Line l1(a,b);
-//    Line l2(b,c);
-//    if (!cmp(l1.b,0.0) && !cmp(l2.b,0.0)) {
-//        return atan(-l2.a / l2.b) - atan(-l1.a / l1.b);
-//    }
-//    if (!cmp(l1.b,0.0)) {
-//        return 0.5 * M_PI - atan(-l1.a / l1.b);
-//    }
-//    if (!cmp(l2.b,0.0)) {
-//        return 0.5 * M_PI - atan(-l2.a / l2.b);
-//    }
-//    return 0.0;
-//}
+    
 
 bool Polygon::isSimilarTo(const Shape& shape) {
     Polygon poly;
@@ -428,7 +404,7 @@ bool Polygon::isSimilarTo(const Shape& shape) {
         flag = true;
         for (int j = 0; j < size2; ++j) {
             if (!cmp(sides1[(i + j) % size1] / sides1[(i + j + 1) % size1], sides2[j] / sides2[(j + 1) % size2])) { //vertices[(i+j) % size1] != poly.vertices[j]
-                flag = false;
+                flag = false;// Аналогично
             }
         }
         if (flag) {
@@ -469,111 +445,6 @@ bool Polygon::isSimilarTo(const Shape& shape) {
         }
     }
     return false;
-    /*
-    cosinuses1.clear();
-    for (int i = 0; i < size1; ++i) {
-        cosinuses1.insert(cos(angle(vertices[i], vertices[(i+1) % size1], vertices[(i+2) % size1])));
-    }
-    cosinuses2.clear();
-    for (int i = 0; i < size1; ++i) {
-        cosinuses1.insert(cos(angle(poly.vertices[i], poly.vertices[(i+1) % size1], poly.vertices[(i+2) % size1])));
-    }
-    sinuses1.clear();
-    for (int i = 0; i < size1; ++i) {
-        sinuses1.insert(sin(angle(vertices[i], vertices[(i+1) % size1], vertices[(i+2) % size1])));
-    }
-    sinuses2.clear();
-    for (int i = 0; i < size1; ++i) {
-        sinuses1.insert(sin(angle(poly.vertices[i], poly.vertices[(i+1) % size1], poly.vertices[(i+2) % size1])));
-    }
-    */
-    /*
-    double ratio;
-    bool flag;
-    for (int i = 0; i < size1; ++i) {
-        flag = true;
-        ratio = sides1[i] / sides2[0];
-        for (int j = 0; j < size2; ++j) {
-            if (!cmp(ratio, sides1[(i+j) % size1] / sides2[j])) {
-                flag = false;
-            }
-        }
-        if (flag) {
-            return true;
-        }
-    }
-    sides2.clear();
-    for (int i = size2; i > 0; --i) {
-        sides2.push_back(point_distance(poly.vertices[(i) % size2],poly.vertices[i-1]));
-    }
-    for (int i = 0; i < size1; ++i) {
-        flag = true;
-        ratio = sides1[i] / sides2[0];
-        for (int j = 0; j < size2; ++j) {
-            if (!cmp(ratio, sides1[(i+j) % size1] / sides2[j])) {
-                flag = false;
-            }
-        }
-        if (flag) {
-            return true;
-        }
-    }
-    return false;
-     */
-    /*
-    vector<double> ratios1, ratios2;
-    ratios1.clear();
-    for (int i = 0; i < size1; ++i) {
-        ratios1.push_back(sides1[i] / sides1[(i+1) % size1]);
-    }
-    ratios2.clear();
-    for (int i = 0; i < size2; ++i) {
-        ratios2.push_back(sides2[i] / sides2[(i+1) % size2]);
-    }
-    double ratio;
-    bool flag;
-    for (int i = 0; i < size1; ++i) {
-        flag = false;
-        ratio = ratios1[i];
-        auto it = ratios2.begin();
-        for (int j = 0; j < size2; ++j) {
-            if (!cmp(ratios2[j], ratio)) {
-                flag = true;
-                ratios2.erase(it);
-                break;
-            }
-            it++;
-        }
-        if (!flag) {
-            return false;
-        }
-    }
-    sides2.clear();
-    for (int i = size2; i > 0; --i) {
-        sides2.push_back(point_distance(poly.vertices[(i) % size2],poly.vertices[i-1]));
-    }
-    ratios2.clear();
-    for (int i = 0; i < size2; ++i) {
-        ratios2.push_back(sides2[i] / sides2[(i+1) % size2]);
-    }
-    for (int i = 0; i < size1; ++i) {
-        flag = false;
-        ratio = ratios1[i];
-        auto it = ratios2.begin();
-        for (int j = 0; j < size2; ++j) {
-            if (cmp(ratios2[j], ratio)) {
-                flag = true;
-                ratios2.erase(it);
-                break;
-            }
-            it++;
-        }
-        if (!flag) {
-            return false;
-        }
-    }
-    return true;
-    */
 }
 
 
@@ -719,12 +590,14 @@ void Polygon::scale(Point center, double coeff) {
 
 class Ellipse : public Shape {
 public:
-    double a, b, c, e;
+    double a, b, c, e;// Что это (имена), и почему в public?
     Point f1, f2;
+    
     Ellipse() = default;
     Ellipse(Point, Point, double);
     std::pair<Point,Point> focuses() const;
     std::pair<Line, Line> directrices() const;
+    
     double eccentricity() const;
     Point center() const;
     double perimeter() override;
@@ -881,8 +754,9 @@ void Ellipse::scale(Point center, double coeff) {
 class Circle : public Ellipse {
 public:
     using Ellipse::Ellipse;
-    Point c;
+    Point c;// Зачем, они ведь уже существуют внутри Элипса
     double r;
+    
     Circle() = default;
     Circle(Point, double);
     double radius() const;
@@ -999,7 +873,7 @@ void Circle::scale(Point center, double coeff) {
 
 class Rectangle : public Polygon {
 public:
-    using Polygon::Polygon;
+    using Polygon::Polygon;// Сомнительная фраза, потому что так можно создать прямоугольник из 10 точек без проверки, тут тогда явно нужно делать другие конструкторы
     Point a, b, c , d;
     Rectangle() = default;
     Rectangle(Point, Point, double k);
