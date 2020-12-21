@@ -21,6 +21,7 @@ ll log(ll n) {
 
 int main() {
     ll n, m;
+    
     cin >> n >> m;
     ll a[n];
     for (ll i = 0; i < n; ++i) {
