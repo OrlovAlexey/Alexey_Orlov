@@ -346,6 +346,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
     for (int i = 0; i < size1; ++i) {
         double angle = get_angle(vertices[i], vertices[(i + 1) % size1], vertices[(i + 2) % size1]);
         sides1.push_back({point_distance(vertices[i], vertices[(i + 1) % size1]), {abs(cos(angle)), sin(angle)}});// Для начала векторам можно было resize сделать.
+        // Resize здесь я предложил сделать для того, чтобы не требовалось делать push_back
     }
     sides2.clear();
     sides2.resize(size2);
@@ -748,7 +749,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         ~Circle() = default;
     };
 
-    Circle::Circle(Point center, double radius) {
+    Circle::Circle(Point center, double radius) {//f1 = f2, a = b, просто для совместимости
         f1 = center;
         a = radius;
     }
@@ -782,7 +783,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         return !(*this == shape);
     }
 
-    bool Circle::isCongruentTo(const Shape& shape) {
+    bool Circle::isCongruentTo(const Shape& shape) {// Эти функции по хорошему должны отвечать true, когда сравниваются с объектом элипса, у которого центры и фокусы совпадают
         Circle cir;
         try {
             cir = dynamic_cast<const Circle&>(shape);
@@ -846,7 +847,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         std::pair<Line, Line> diagonals() const;
         double perimeter() override;
         double area() override;
-        using Polygon::operator==;
+        using Polygon::operator==;// Эти вещи можно не писать, он сам их подтянет
         using Polygon::operator!=;
         using Polygon::isCongruentTo;
         using Polygon::isSimilarTo;
@@ -905,7 +906,7 @@ bool Polygon::isCongruentTo(const Shape& shape) {
         return point_distance(vertices[0],vertices[1]) * point_distance(vertices[1], vertices[2]);
     }
 
-    void Rectangle::rotate(Point center, double angle) {
+    void Rectangle::rotate(Point center, double angle) {// Такие вызовы так же можно было бы опустить, компилятор сделал бы всё сам
         (*this).Polygon::rotate(center, angle);
     }
 
@@ -923,14 +924,14 @@ bool Polygon::isCongruentTo(const Shape& shape) {
 
 
 class Square : public Rectangle {
-    protected:
+    protected:// Всё protected???
         Square() = default;
         Square(Point, Point);
         Circle inscribedCircle() const;
         Circle circumscribedCircle() const;
         double perimeter() override;
         double area() override;
-        using Polygon::operator==;
+        using Polygon::operator==;// Аналогично
         using Polygon::operator!=;
         using Polygon::isCongruentTo;
         using Polygon::isSimilarTo;
