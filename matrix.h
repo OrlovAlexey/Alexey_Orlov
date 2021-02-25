@@ -878,7 +878,7 @@ struct Finite {
     }
     Finite<N> operator++ (int) {
         Finite<N> copy = *this;
-        ++(copy);
+        ++(copy);// ++ делается для this, а не для copy, иначе смысла нет
         return copy;
     }
     Finite<N>& operator-- () {
@@ -888,7 +888,7 @@ struct Finite {
     }
     Finite<N> operator-- (int) {
         Finite<N> copy = *this;
-        --(copy);
+        --(copy);// Аналогично
         return copy;
     }
     Finite<N> operator+= (Finite<N> a) {
@@ -936,7 +936,8 @@ Finite<N> operator* (Finite<N> a, Finite<N> b) {
     return Finite<N>(a.num * b.num);
 }
 
-bool constexpr is_prime(int n) {
+bool constexpr is_prime(int n) {// Арихтектурно можно было бы создать static переменную, куда записывать ответ после первого вызова и не вычислять
+    // эту функцию в дальнейшем
     for (int i = 2; i * i <= n; ++i) {
         if (n % i == 0) {
             return false;
@@ -1071,7 +1072,12 @@ struct Matrix{
     }
 };
 
-template <unsigned N, typename Field>
+
+
+
+template <unsigned N, typename Field> // Довольно много копирования получается в даннм случае. У тебя уже используются static_assert, так что создание отдельного
+// класса получается не логичным. Но ладно
+// На самом деле можно было бы либо отнаследовать данный класс от предыдущего, либо написать teamplate <unsigned N, unsigned M = N, typename Field = Rational>
 struct Matrix<N,N,Field>{
     vector<vector<Field>> mat;
     Matrix() {
@@ -1245,6 +1251,7 @@ template <size_t N, typename Field = Rational>
 using SquareMatrix = Matrix<N, N, Field>;
 
 // вот такое правильное бы было наследование?
+// В целом да, хотя тут можно скорее написать через using, так как перегружать нечего)
 //template <unsigned N, typename Field = Rational>
 //struct SquareMatrix: Matrix<N,N,Field>{
 //    SquareMatrix(){
