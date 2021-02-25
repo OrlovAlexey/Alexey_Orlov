@@ -319,6 +319,7 @@ public:
         return *this;
     }
     BigInteger& operator%= (const BigInteger& b) {
+        // Тут можно было оставить старый код
         BigInteger copy = *this;
         num.clear();
         BigInteger remainder = 0;
@@ -388,7 +389,7 @@ public:
     // Эти операторы при правильном написании не должны быть friend
     // у меня /=, %= написаны через -, *, /
     // но это можно пофиксить
-    // но в <, >, >> используются знаки и не только
+    // но в <, >, >> используются знаки и не только  // Это ок. А про -,*, / даже не можно, а нужно, так как так правильнее
     friend bool operator< (const BigInteger&, const BigInteger&);
     friend bool operator> (const BigInteger&, const BigInteger&);
     friend istream& operator>> (istream&, BigInteger&);
