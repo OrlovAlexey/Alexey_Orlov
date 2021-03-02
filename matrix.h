@@ -878,7 +878,7 @@ struct Finite {
     }
     Finite<N> operator++ (int) {
         Finite<N> copy = *this;
-        ++(copy);// ++ делается для this, а не для copy, иначе смысла нет
+        ++(*this);// ++ делается для this, а не для copy, иначе смысла нет
         return copy;
     }
     Finite<N>& operator-- () {
@@ -888,7 +888,7 @@ struct Finite {
     }
     Finite<N> operator-- (int) {
         Finite<N> copy = *this;
-        --(copy);// Аналогично
+        --(*this);// Аналогично
         return copy;
     }
     Finite<N> operator+= (Finite<N> a) {
