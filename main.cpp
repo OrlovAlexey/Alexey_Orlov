@@ -50,4 +50,4 @@ int main() {
     int cycles = count_cycles(ust, v);
     cout << std::fixed << std::setprecision(17) << (double)(cycles) / (double)(4);
     return 0;
-}
+} // Во всех заданиях из этого раздела нужно было реализовать свою хеш таблицу, нельзя использовать unordered_set
