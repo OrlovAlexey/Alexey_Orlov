@@ -2,6 +2,7 @@
 #include "string"
 #include <vector>
 #include <fstream>
+#include <cstring>
 
 using std::string;
 using std::vector;
@@ -158,14 +159,14 @@ int main() {
     string s1, s2;
     while (inf >> command) {
         inf >> s1;
-        if (command[0] == 'p') { // зачем проверять только первую букву? Это дает возможность использовать некорректную команду и это усложняет чтение кода.
+        if (strcmp(command[0], "put")) {
             inf >> s2;
             h_table.Add(s1, s2);
         }
-        if (command[0] == 'd') {
+        if (strcmp(command[0], "delete")) {
             h_table.Delete(s1);
         }
-        if (command[0] == 'g') {
+        if (strcmp(command[0], "get")) {
             outf << h_table.Find(s1) << '\n';
         }
     }
