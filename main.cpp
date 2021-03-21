@@ -159,14 +159,14 @@ int main() {
     string s1, s2;
     while (inf >> command) {
         inf >> s1;
-        if (strcmp(command[0], "put")) {
+        if (strcmp(command, "put")) {
             inf >> s2;
             h_table.Add(s1, s2);
         }
-        if (strcmp(command[0], "delete")) {
+        if (strcmp(command, "delete")) {
             h_table.Delete(s1);
         }
-        if (strcmp(command[0], "get")) {
+        if (strcmp(command, "get")) {
             outf << h_table.Find(s1) << '\n';
         }
     }
