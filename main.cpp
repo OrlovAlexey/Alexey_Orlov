@@ -24,9 +24,9 @@ void dp_solution(int n, const vector<ll>& v) {
     ll length = 0;
     for (ll i = 0; i < n; ++i) {
         ll j = (ll)(std::upper_bound(dp.begin(), dp.end(), v[i]) - dp.begin());
-        if (dp[j-1] <= v[i] && v[i] <= dp[j]) {
+        if (dp[j-1] <= v[i] && v[i] <= dp[j]) { // зачем это проверять, j вроде выбирается так, чтобы это выполнялось
             dp[j] = v[i];
-            p[j] = i;
+            p[j] = i; // однобуквенные имена переменных лучше не использовать
             prev_p[i] = p[j-1];
             if (length < j)
                 length = j;
