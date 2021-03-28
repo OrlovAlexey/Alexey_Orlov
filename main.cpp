@@ -5,7 +5,7 @@ using std::cin;
 using std::cout;
 using std::vector;
 
-int main() {
+int main() { // все в main, однобуквенные имена переменных
     int n, m;
     cin >> n >> m;
     vector<int> a(n), b(m);
