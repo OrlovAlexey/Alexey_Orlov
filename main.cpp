@@ -6,7 +6,7 @@ using std::cout;
 using std::vector;
 using std::max;
 
-int main() {
+int main() { // все в main
     int S, N;
     cin >> S >> N;
     vector<int> w(N);
