@@ -6,7 +6,7 @@ using std::cout;
 using std::vector;
 using std::max;
 
-int main() {
+int main() { // вся функциональность в main, за это 0
     long long n, m;
     cin >> n;
     vector<long long> s(n);
@@ -14,7 +14,7 @@ int main() {
         cin >> s[i];
     }
     cin >> m;
-    vector<long long> t(m);
+    vector<long long> t(m); //однобуквенные имена лучше не использовать
     for (long long j = 0; j < m; ++j) {
         cin >> t[j];
     }
