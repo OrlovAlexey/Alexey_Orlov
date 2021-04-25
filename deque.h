@@ -31,6 +31,7 @@ public:
                 try {
                     new(array[(sz / base) + i] + j) T(element);
                 } catch (...) {
+                    // Просто проброса не хватит, требуется удалить уже сконструированные элементы и только потом продолжить проброс. -5%
                     throw;
                 }
             }
@@ -43,6 +44,7 @@ public:
             array[2 * (sz / base)] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
             for (size_t j = 0; j < (sz % base); ++j) {
                 new(array[2 * (sz / base)] + (base - 1 - j)) T(element);
+                // Здесь так же требуется try-catch. -5%
             }
             front = {2 * (sz / base), base - (sz % base)};
         }// last bucket
@@ -61,6 +63,8 @@ public:
             try {
                 array[i - 1] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
             } catch (...) {
+                // Так плохо делать, так как у тебя деструктор зависит от переменных front и back, которые пусты, и он по факту ничего не удалит. 
+                // Плюс, выделится могут не все элементы, а только часть, и за этим так же стоит следить. -10%
                 this->~Deque();
                 throw;
             }
@@ -69,6 +73,7 @@ public:
                 try {
                     new(array[i - 1] + j) T(another.array[i - 1][j]);
                 } catch (...) {
+                    // Аналогично, плюс ещё нужно уничтожать уже созданные элементы
                     this->~Deque();
                     throw;
                 }
@@ -81,7 +86,10 @@ public:
     Deque& operator= (const Deque& deque1){// copying to old object
         if (this != &deque1) {
             Deque<T> copy(*this);
+            // А зачем copy, можно просто сохранить ссылки на старые элементы без удаления, и заодно не бояться ещё одного исключения в copy.
+            // А удалять старые будешь уже после удачного создания новых
 
+            // Перед удалением требуется вызывать деструкторы. -5%
             for (size_t i = front.first; i + 1 > back.first; --i) {
                 delete[] reinterpret_cast<int8_t*>(array[i]);
             }
@@ -112,7 +120,8 @@ public:
                             array[k - 1] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
                             for (size_t l = (k - 1 == copy.front.first ? copy.front.second : 0);
                                  l <= (k - 1 == copy.back.first ? copy.back.second : (base - 1)); ++l) {
-                                new(array[k - 1] + l) T(copy.array[k - 1][l]);
+                                new(array[k - 1] + l) T(copy.array[k - 1][l]);// Заного копировать что уже было.... в любом случае конструирование, как функция, которая может кинуть исключение, не должна вызываться в блоке catch.
+                                // Если правильно поправишь порядок работы, то она не понадобится.
                             }
                         }
 
@@ -181,6 +190,8 @@ public:
         try {
             new(array[back.first] + ((back.second + 1) % base)) T(element);
         } catch (...) {
+            // То есть, если тебе не требовалось увеличение размера массива, то ты просто удаляешь со злости последний массив? 
+            // Разграничь области, где ты увеличиваешь размер памяти дека, и где пытаешься сконструировать элемент на сырой памяти. -5%
             delete[] reinterpret_cast<int8_t*>(array[back.first]);
             ++back.first;
             throw;
@@ -209,6 +220,7 @@ public:
         try {
             new(array[front.first] + ((front.second + base - 1) % base)) T(element);
         } catch (...) {
+            // Аналогично
             delete[] reinterpret_cast<int8_t*>(array[front.first]);
             --front.first;
             throw;
@@ -240,12 +252,15 @@ public:
     }
 
     template <bool IsConst = false>
+    // Следовало использовать не T, а так же std::conditional_t<IsConst, const T, T>, тогда трейтсы создадутся корректно и reverse итератор, использующий их, будет иметь нужные типы возвращаемых значений
     struct common_iterator : public std::iterator<std::random_access_iterator_tag, T> {
         pair<int, int> index;
         std::conditional_t<IsConst, const T**, T**> p;// указатель на начало дека
         common_iterator() : index({0, 0}), p(nullptr){}
         common_iterator(int index1, int index2, std::conditional_t<IsConst, const T**, T**> P) : index({index1, index2}), p(P) {}
         common_iterator(const common_iterator& it1) : index(it1.index), p(it1.p){}
+        // Следовало бы так же создать каст обычно итератора к конст итератор для корректной работы
+
         common_iterator& operator= (common_iterator it1) {
             index = it1.index;
             p = it1.p;
@@ -364,6 +379,7 @@ public:
         return const_iterator(back.first, back.second + 1, const_cast<const T**>(array));
     }
 
+    // std::reverse_iterator<iterator> может сделать всё за вас! Покупай бесплатно без смс
     template <bool IsConst>
     struct common_reverse_iterator : public std::iterator<std::random_access_iterator_tag, T> {
         pair<int, int> index;
@@ -517,6 +533,7 @@ public:
     }
 
     ~Deque() {
+        // Здесь бы так же следовало уничтожать элементы, а не только очищать память, так как там могут быть не тривиальные (скорее всего) поля, которые требуют деструктора. -5%
         for (size_t i = front.first + 1; i >= back.first + 1; --i) {
             delete[] array[i - 1];
         }
