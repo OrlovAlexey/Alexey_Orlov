@@ -3,7 +3,7 @@
 
 using namespace std;
 
-long long cycle_start = -1;
+long long cycle_start = -1; // глобально объявляются только константы
 long long cycle_end = -1;
 
 bool dfs(long long v, vector<char>& color, vector<long long>& par, const vector<vector<long long>>& graph) {
@@ -62,7 +62,7 @@ int main() {
     }// input
     vector<char> color(n, 'w');
     vector<long long> par(n, -1);
-    bool verdict;
+    bool verdict; // нужно проинициализировать или просто вернуть из функции solution
     solution(n, verdict, color, par, graph);
     print_of_answer(verdict, par);
     return 0;
