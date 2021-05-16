@@ -3,10 +3,7 @@
 
 using namespace std;
 
-long long cycle_start = -1; // глобально объявляются только константы
-long long cycle_end = -1;
-
-bool dfs(long long v, vector<char>& color, vector<long long>& par, const vector<vector<long long>>& graph) {
+bool dfs(long long v, vector<char>& color, vector<long long>& par, const vector<vector<long long>>& graph, long long& cycle_start, long long& cycle_end) {
     color[v] = 'g';
     for (long long to : graph[v]) {
         if (color[to] == 'g') {
@@ -16,7 +13,7 @@ bool dfs(long long v, vector<char>& color, vector<long long>& par, const vector<
         }
         if (color[to] == 'w') {
             par[to] = v;
-            if (dfs(to, color, par, graph)) {
+            if (dfs(to, color, par, graph, cycle_start, cycle_start)) {
                 return true;
             }
         }
@@ -25,16 +22,18 @@ bool dfs(long long v, vector<char>& color, vector<long long>& par, const vector<
     return false;
 }
 
-void solution(long long n, bool& verdict, vector<char>& color, vector<long long>& par, const vector<vector<long long>>& graph) {
+bool solution(long long n, vector<char>& color, vector<long long>& par, const vector<vector<long long>>& graph, long long& cycle_start, long long& cycle_end) {
+    bool verdict;
     for (long long s = 0; s < n; ++s) {
-        verdict = dfs(s, color, par, graph);
+        verdict = dfs(s, color, par, graph, cycle_start, cycle_end);
         if (verdict) {
-            break;
+            return true;
         }
     }
+    return false;
 }
 
-void print_of_answer(bool verdict, const vector<long long>& par) {
+void print_of_answer(bool verdict, const vector<long long>& par, long long cycle_start, long long cycle_end) {
     if (!verdict) {
         cout << "NO";
     }
@@ -62,8 +61,9 @@ int main() {
     }// input
     vector<char> color(n, 'w');
     vector<long long> par(n, -1);
-    bool verdict; // нужно проинициализировать или просто вернуть из функции solution
-    solution(n, verdict, color, par, graph);
-    print_of_answer(verdict, par);
+    long long cycle_start = -1;
+    long long cycle_end = -1;
+    bool verdict = solution(n, color, par, graph, cycle_start, cycle_end); // нужно проинициализировать или просто вернуть из функции solution
+    print_of_answer(verdict, par, cycle_start, cycle_end);
     return 0;
 }
