@@ -32,6 +32,13 @@ public:
                     new(array[(sz / base) + i] + j) T(element);
                 } catch (...) {
                     // Просто проброса не хватит, требуется удалить уже сконструированные элементы и только потом продолжить проброс. -5%
+                    for (size_t i1 = i + 1; i1 > 0; --i1) {
+                        for (size_t j1 = (i1 == i + 1 ? j + 1 : base); j1 > 0; --j1) {
+                            (array[(sz / base) + i1 - 1] + j1 - 1)->~T();
+                        }
+                        delete[] array[(sz / base) + i1 - 1];
+                    }
+                    delete[] array;
                     throw;
                 }
             }
@@ -43,7 +50,23 @@ public:
         else {
             array[2 * (sz / base)] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
             for (size_t j = 0; j < (sz % base); ++j) {
-                new(array[2 * (sz / base)] + (base - 1 - j)) T(element);
+                try {
+                    new(array[2 * (sz / base)] + (base - 1 - j)) T(element);
+                } catch (...) {
+                    for (size_t j1 = base; j1 > j; --j1) {
+                        (array[2 * (sz / base)] + j1 - 1)->~T();
+                    }
+                    delete[] array[2 * (sz / base)];
+
+                    for (size_t i1 = (sz / base); i1 > 0; --i1) {
+                        for (size_t j1 = (i1 == (sz / base) ? j + 1 : base); j1 > 0; --j1) {
+                            (array[(sz / base) + i1 - 1] + j1 - 1)->~T();
+                        }
+                        delete[] array[(sz / base) + i1 - 1];
+                    }
+                    delete[] array;
+                    throw;
+                }
                 // Здесь так же требуется try-catch. -5%
             }
             front = {2 * (sz / base), base - (sz % base)};
@@ -57,6 +80,7 @@ public:
         try {
             array = new T* [capacity / base + 1];
         } catch (...) {
+            delete[] array;
             throw;
         }
         for(size_t i = another.front.first + 1; i >= another.back.first + 1; --i) {
@@ -65,7 +89,10 @@ public:
             } catch (...) {
                 // Так плохо делать, так как у тебя деструктор зависит от переменных front и back, которые пусты, и он по факту ничего не удалит. 
                 // Плюс, выделится могут не все элементы, а только часть, и за этим так же стоит следить. -10%
-                this->~Deque();
+                for (size_t i1 = i + 1; i1 < another.front.first + 2; ++i1) {
+                    delete[] array[i1 - 1];
+                }
+                delete[] array;
                 throw;
             }
             for (size_t j = (i - 1 == another.front.first ? another.front.second : 0);
@@ -74,7 +101,14 @@ public:
                     new(array[i - 1] + j) T(another.array[i - 1][j]);
                 } catch (...) {
                     // Аналогично, плюс ещё нужно уничтожать уже созданные элементы
-                    this->~Deque();
+                    for (size_t i1 = i; i1 < another.front.first + 2; ++i1) {
+                        for (size_t j1 = (i1 == i ? j + 2 : base); j1 >= (i1 == another.front.first + 1 ? another.front.second + 1 : 1); --j1) {
+                            (array[i1 - 1] + j1 - 1)->~T();
+                            delete (array[i1 - 1] + j1 - 1);
+                        }
+                        delete[] array[i1 - 1];
+                    }
+                    delete[] array;
                     throw;
                 }
             }
@@ -85,15 +119,15 @@ public:
 
     Deque& operator= (const Deque& deque1){// copying to old object
         if (this != &deque1) {
-            Deque<T> copy(*this);
+//            Deque<T> copy(*this);
             // А зачем copy, можно просто сохранить ссылки на старые элементы без удаления, и заодно не бояться ещё одного исключения в copy.
             // А удалять старые будешь уже после удачного создания новых
+            T** old_array = array;
+            size_t old_sz = sz;
+            size_t old_cap = capacity;
 
             // Перед удалением требуется вызывать деструкторы. -5%
-            for (size_t i = front.first; i + 1 > back.first; --i) {
-                delete[] reinterpret_cast<int8_t*>(array[i]);
-            }
-            delete[] array;
+            this->~Deque(); // в декструкторе дека вызываю деструкторы
 
             sz = deque1.sz;
             capacity = 3 * sz;
@@ -108,26 +142,28 @@ public:
                     } catch (...) {
                         // if constructor caught an error
                         for (; i <= deque1.front.first + 1; ++i) {
+                            for (; j >= (i == deque1.front.first + 1 ? deque1.front.second + 1 : 1); --j) {
+                                (array[i - 1] + j - 1)->~T();
+                            }
                             delete[] array[i - 1];
                         }
                         delete[] array;
-                        sz = copy.sz;
-                        capacity = copy.capacity;
-                        front = copy.front;
-                        back = copy.back;
-                        array = new T* [capacity / base + 1];
-                        for(size_t k = copy.front.first + 1; k >= copy.back.first + 1; --k) {
-                            array[k - 1] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
-                            for (size_t l = (k - 1 == copy.front.first ? copy.front.second : 0);
-                                 l <= (k - 1 == copy.back.first ? copy.back.second : (base - 1)); ++l) {
-                                new(array[k - 1] + l) T(copy.array[k - 1][l]);// Заного копировать что уже было.... в любом случае конструирование, как функция, которая может кинуть исключение, не должна вызываться в блоке catch.
-                                // Если правильно поправишь порядок работы, то она не понадобится.
-                            }
-                        }
-
+                        sz = old_sz;
+                        capacity = old_cap;
+                        array = old_array;
                     }
                 }
             }
+            // удаляем старый дек
+            for(size_t i = front.first + 1; i >= back.first + 1; --i) {
+                for (size_t j = (i - 1 == front.first ? front.second : 0);
+                     j <= (i - 1 == back.first ? back.second : (base - 1)); ++j) {
+                    (old_array[i - 1] + j)->~T();
+                }// деструктор вызываю
+                delete[] old_array[i - 1];
+            }
+            delete[] old_array;
+
             front = deque1.front;
             back = deque1.back;
         }
@@ -172,29 +208,39 @@ public:
 
     void push_back(const T& element) {
         if (back.second == base - 1) {
-            while (back.first == 0) {
-                try {
-                    fixer();
-                } catch (...) {
-                    throw;
+            if (back.first == 0) { // здесь дек увеличивается
+                while (back.first == 0) {
+                    try {
+                        fixer();
+                    } catch (...) {
+                        throw;
+                    }
                 }
+
             }
             --back.first;
             try {
-                array[back.first] = reinterpret_cast<T*>(new int8_t[base * sizeof(T)]);
+                array[back.first] = reinterpret_cast<T *>(new int8_t[base * sizeof(T)]);
             } catch (...) {
                 ++back.first;
                 throw;
             }
+            try {
+                new(array[back.first] + ((back.second + 1) % base)) T(element);
+            } catch (...) {
+                // То есть, если тебе не требовалось увеличение размера массива, то ты просто удаляешь со злости последний массив?
+                // Разграничь области, где ты увеличиваешь размер памяти дека, и где пытаешься сконструировать элемент на сырой памяти. -5%
+                delete[] reinterpret_cast<int8_t*>(array[back.first]);
+                ++back.first;
+                throw;
+            }
         }
-        try {
-            new(array[back.first] + ((back.second + 1) % base)) T(element);
-        } catch (...) {
-            // То есть, если тебе не требовалось увеличение размера массива, то ты просто удаляешь со злости последний массив? 
-            // Разграничь области, где ты увеличиваешь размер памяти дека, и где пытаешься сконструировать элемент на сырой памяти. -5%
-            delete[] reinterpret_cast<int8_t*>(array[back.first]);
-            ++back.first;
-            throw;
+        else { // a здесь нет
+            try {
+                new(array[back.first] + ((back.second + 1) % base)) T(element);
+            } catch (...) {
+                throw;
+            }
         }
         back.second = (back.second + 1) % base;
         ++sz;
@@ -216,14 +262,21 @@ public:
                 --front.first;
                 throw;
             }
+            try {
+                new(array[front.first] + ((front.second + base - 1) % base)) T(element);
+            } catch (...) {
+                // Аналогично
+                delete[] reinterpret_cast<int8_t*>(array[front.first]);
+                --front.first;
+                throw;
+            }
         }
-        try {
-            new(array[front.first] + ((front.second + base - 1) % base)) T(element);
-        } catch (...) {
-            // Аналогично
-            delete[] reinterpret_cast<int8_t*>(array[front.first]);
-            --front.first;
-            throw;
+        else {
+            try {
+                new(array[front.first] + ((front.second + base - 1) % base)) T(element);
+            } catch (...) {
+                throw;
+            }
         }
         front.second = (front.second + base - 1) % base;
         ++sz;
@@ -253,13 +306,15 @@ public:
 
     template <bool IsConst = false>
     // Следовало использовать не T, а так же std::conditional_t<IsConst, const T, T>, тогда трейтсы создадутся корректно и reverse итератор, использующий их, будет иметь нужные типы возвращаемых значений
-    struct common_iterator : public std::iterator<std::random_access_iterator_tag, T> {
+    struct common_iterator : public std::iterator<std::random_access_iterator_tag, std::conditional_t<IsConst, const T, T>> {
         pair<int, int> index;
         std::conditional_t<IsConst, const T**, T**> p;// указатель на начало дека
         common_iterator() : index({0, 0}), p(nullptr){}
         common_iterator(int index1, int index2, std::conditional_t<IsConst, const T**, T**> P) : index({index1, index2}), p(P) {}
         common_iterator(const common_iterator& it1) : index(it1.index), p(it1.p){}
         // Следовало бы так же создать каст обычно итератора к конст итератор для корректной работы
+        common_iterator(const common_iterator<false>& other) : index(other.index), p(other.p){}
+
 
         common_iterator& operator= (common_iterator it1) {
             index = it1.index;
@@ -380,6 +435,10 @@ public:
     }
 
     // std::reverse_iterator<iterator> может сделать всё за вас! Покупай бесплатно без смс
+    // да, но я узнал о нем когда было слишком поздно поэтому оставлю свой
+
+    //    using reverse_iterator = std::reverse_iterator<iterator>; // на всякий случай
+    //    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     template <bool IsConst>
     struct common_reverse_iterator : public std::iterator<std::random_access_iterator_tag, T> {
         pair<int, int> index;
@@ -534,7 +593,11 @@ public:
 
     ~Deque() {
         // Здесь бы так же следовало уничтожать элементы, а не только очищать память, так как там могут быть не тривиальные (скорее всего) поля, которые требуют деструктора. -5%
-        for (size_t i = front.first + 1; i >= back.first + 1; --i) {
+        for(size_t i = front.first + 1; i >= back.first + 1; --i) {
+            for (size_t j = (i - 1 == front.first ? front.second : 0);
+                 j <= (i - 1 == back.first ? back.second : (base - 1)); ++j) {
+                (array[i - 1] + j)->~T();
+            }// деструктор вызываю
             delete[] array[i - 1];
         }
         delete[] array;
@@ -564,6 +627,6 @@ public:
         }
         delete[] array;
         array = copy;
-    }// make extension of the array (capacity -> 3*capacity)
+    }// makes extension of the array (capacity -> 3*capacity)
 
 };
