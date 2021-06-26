@@ -314,7 +314,7 @@ public:
         common_iterator(const common_iterator& it1) : index(it1.index), p(it1.p){}
         // Следовало бы так же создать каст обычно итератора к конст итератор для корректной работы
         common_iterator(const common_iterator<false>& other) : index(other.index), p(other.p){}
-
+        // Эм, под кастом имел в виду operator common_iterator<true>...
 
         common_iterator& operator= (common_iterator it1) {
             index = it1.index;
