@@ -45,7 +45,8 @@ public:
         }
         return (pool->pull[pool->index] + temp);
     }
-    void deallocate(int8_t*) {}
+    void deallocate(int8_t*) {}// У тебя блоки всегда известного размера, так что очищать их не было бы большой проблемой
+    // И следовало бы реализовать эту функцию, иначе слишком много утечек....
     ~FixedAllocator() = default;
 };
 
@@ -92,7 +93,7 @@ public:
     pointer allocate(size_type n) {
         pointer ptr;
         size_t sz = n * sizeof(value_type);
-        if (sz % 8 == 0) {
+        if (sz % 8 == 0) {// Лучше делать не равно, а меньше или равно, так как редко когда объекты имеют размер прям по степеням
             ptr = reinterpret_cast<pointer>(fixed_alloc8.allocate(sz / 8));
         }
         else if (sz % 4 == 0) {
@@ -158,7 +159,7 @@ public:
     struct propagate_on_container_move_assignment : std::true_type {};
 
     pointer allocate(size_type n) {
-        return reinterpret_cast<pointer>(::operator new(n * sizeof(value_type)));
+        return reinterpret_cast<pointer>(::operator new(n * sizeof(value_type)));// Так это выделение n*8 байт... зачем???
     }
 
     void deallocate(pointer ptr, size_type n) {
@@ -305,7 +306,7 @@ public:
         return sz;
     }
 
-    void push_back(T value) {
+    void push_back(T value) {// const t& value
         Node* newnode = AllocTraits::allocate(alloc, 1);
         AllocTraits::construct(alloc, newnode, value, last, last->prev);
         last->prev->next = newnode;
@@ -313,7 +314,7 @@ public:
         ++sz;
     }
 
-    void push_front(T value) {
+    void push_front(T value) {// Аналогично
         Node* newnode = AllocTraits::allocate(alloc, 1);
         AllocTraits::construct(alloc, newnode, value, first->next, first);
         first->next->prev = newnode;
@@ -321,7 +322,7 @@ public:
         ++sz;
     }
 
-    void pop_back() {
+    void pop_back() {// Аналогично
         Node* exnode = last->prev;
         exnode->prev->next = last;
         last->prev = exnode->prev;
@@ -348,7 +349,8 @@ public:
 
         common_iterator() : ptr(nullptr) {}
         common_iterator(std::conditional_t<IsConst, const Node*, Node*> Ptr) : ptr(Ptr) {}
-        common_iterator(const common_iterator<false>& other) : ptr(other.ptr){}
+        common_iterator(const common_iterator<false>& other) : ptr(other.ptr){}// Лучше делать оператор каста к const,
+        // нежели конструирование
         common_iterator& operator= (common_iterator it1) {
             ptr = it1.ptr;
             return *this;
