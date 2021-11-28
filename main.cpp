@@ -4,7 +4,7 @@ using std::string;
 using std::cin;
 using std::cout;
 
-int ALPHABET_SIZE = 256;
+int ALPHABET_SIZE = 256; //константа
 
 int first_iteration(int n, int cnt[], const string& s, int c[], int p[]) {
     for (int i = 0; i < ALPHABET_SIZE; ++i) {
