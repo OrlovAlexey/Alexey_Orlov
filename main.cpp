@@ -10,7 +10,7 @@ using std::max;
 using std::cin;
 using std::cout;
 using cmplx = complex<double>;
-
+// на лекции показывалось, как развернуть рекурсию
 void fft(vector<cmplx>& a, bool is_invert) {
     int n = (int)a.size();
     if (n == 1) {
